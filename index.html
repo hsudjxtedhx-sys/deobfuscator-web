@@ -42,7 +42,7 @@
     <p style="font-size:0.9rem;color:#8b949e;">Selecciona un archivo <code>.txt</code>, <code>.lua</code> o <code>.luau</code> desde tu teléfono. Verás una vista previa antes de enviarlo a la IA.</p>
 
     <div class="warning">
-        ⚠️ <strong>Uso ético:</strong> Solo para análisis defensivo y depuración de scripts propios. Al confirmar, el archivo se envía a un servidor externo (Vercel + Hugging Face).
+        ⚠️ <strong>Uso ético:</strong> Solo para análisis defensivo y depuración de scripts propios. Al confirmar, el archivo se envía a un servidor externo (Vercel + Google Gemini).
     </div>
 
     <div class="card">
@@ -76,6 +76,7 @@
 
     <script>
         const API_URL = 'https://deobfuscator-api-alpha.vercel.app/api/desofuscar';
+        const MAX_CHARS = 100000;
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
         const btnPreview = document.getElementById('btnPreview');
@@ -107,38 +108,83 @@
             reader.readAsText(file);
         });
 
-        function mostrarPreview() { if (contenidoArchivo) { previewCard.style.display = 'block'; previewCard.scrollIntoView({ behavior: 'smooth' }); } }
-        function cancelar() { fileInput.value = ''; contenidoArchivo = null; fileInfo.style.display = 'none'; previewCard.style.display = 'none'; btnPreview.style.display = 'none'; statusBox.style.display = 'none'; output.style.display = 'none'; }
+        function mostrarPreview() {
+            if (contenidoArchivo) {
+                previewCard.style.display = 'block';
+                previewCard.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function cancelar() {
+            fileInput.value = '';
+            contenidoArchivo = null;
+            fileInfo.style.display = 'none';
+            previewCard.style.display = 'none';
+            btnPreview.style.display = 'none';
+            statusBox.style.display = 'none';
+            output.style.display = 'none';
+        }
 
         async function confiarYDesofuscar() {
             if (!contenidoArchivo) { setStatus('err', 'No hay archivo cargado.'); return; }
+            if (contenidoArchivo.length > MAX_CHARS) {
+                setStatus('err', '❌ El archivo es demasiado grande (máximo ' + MAX_CHARS.toLocaleString() + ' caracteres).');
+                return;
+            }
+
             const btn = document.getElementById('btnConfiar');
             btn.disabled = true;
             btn.textContent = '⏳ Enviando a la IA...';
-            setStatus('load', '⏳ Procesando con DeepSeek-Cybersec. Puede tardar 30-60s...');
+            setStatus('load', '⏳ Procesando con Gemini. Puede tardar 30-60s...');
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 58000);
+
             try {
                 const respuesta = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ textoOfuscado: contenidoArchivo })
+                    body: JSON.stringify({ textoOfuscado: contenidoArchivo }),
+                    signal: controller.signal
                 });
-                if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
-                const datos = await respuesta.json();
+
+                const datos = await respuesta.json().catch(() => ({}));
+
+                if (!respuesta.ok) {
+                    throw new Error(datos.error || ('El servidor respondió con error HTTP ' + respuesta.status));
+                }
+
                 if (datos.resultado) {
                     setStatus('ok', '✅ Script desofuscado correctamente.');
                     output.style.display = 'block';
                     output.textContent = datos.resultado;
                     output.scrollIntoView({ behavior: 'smooth' });
-                } else { setStatus('err', '❌ ' + (datos.error || 'Respuesta vacía')); }
+                } else {
+                    setStatus('err', '❌ ' + (datos.error || 'Respuesta vacía'));
+                }
             } catch (err) {
-                setStatus('err', '❌ Error de conexión. Verifica que Vercel esté activo.');
                 console.error(err);
+                let msg;
+                if (err.name === 'AbortError') {
+                    msg = 'La IA tardó demasiado. Prueba con un archivo más pequeño.';
+                } else if (err instanceof TypeError) {
+                    msg = 'No se pudo conectar con el servidor. Revisa tu internet y que Vercel esté activo.';
+                } else {
+                    msg = err.message;
+                }
+                setStatus('err', '❌ ' + msg);
             } finally {
+                clearTimeout(timeout);
                 btn.disabled = false;
                 btn.textContent = '✅ Confiar y enviar a la IA';
             }
         }
-        function setStatus(tipo, mensaje) { statusBox.className = 'status ' + tipo; statusBox.textContent = mensaje; statusBox.style.display = 'block'; }
+
+        function setStatus(tipo, mensaje) {
+            statusBox.className = 'status ' + tipo;
+            statusBox.textContent = mensaje;
+            statusBox.style.display = 'block';
+        }
     </script>
 </body>
 </html>
