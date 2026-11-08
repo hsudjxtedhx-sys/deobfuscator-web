@@ -3,67 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desencriptador / Desofuscador IA</title>
+    <title>Analizador y Desofuscador IA</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         h1 { color: #58a6ff; text-align: center; }
-        .container { width: 100%; max-width: 800px; }
-        .card {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .drop-zone {
-            border: 2px dashed #58a6ff;
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            background-color: #0d1117;
-        }
+        .container { width: 100%; max-width: 900px; }
+        .card { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .alert-box { background-color: #2d1b00; border-left: 4px solid #d29922; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .drop-zone { border: 2px dashed #58a6ff; border-radius: 8px; padding: 30px 20px; text-align: center; cursor: pointer; background-color: #0d1117; transition: 0.3s; }
         .drop-zone:hover { background-color: #1f6feb22; }
-        .drop-zone input[type="file"] { display: none; }
-        .btn {
-            background-color: #238636;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 15px;
-            transition: background-color 0.2s;
-        }
-        .btn:hover { background-color: #2ea043; }
+        input[type="file"] { display: none; }
+        .btn { background-color: #238636; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 15px; }
         .btn:disabled { background-color: #484f58; cursor: not-allowed; }
-        .result-zone {
-            width: 100%;
-            min-height: 150px;
-            background-color: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 10px;
-            color: #c9d1d9;
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            margin-top: 15px;
-            box-sizing: border-box;
-        }
+        .result-zone { width: 100%; min-height: 200px; background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 15px; color: #c9d1d9; font-family: monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; box-sizing: border-box; margin-top: 15px; }
         .info-section { font-size: 0.9em; line-height: 1.6; }
         .info-section a { color: #58a6ff; text-decoration: none; }
         .info-section a:hover { text-decoration: underline; }
@@ -71,105 +23,74 @@
     </style>
 </head>
 <body>
-
 <div class="container">
-    <h1>🛡️ Desencriptador / Desofuscador IA</h1>
+    <h1>🛡️ Analizador de Scripts Ofuscados IA</h1>
+    
+    <div class="alert-box">
+        <strong>⚠️ Aviso sobre Máquinas Virtuales (VM):</strong> Si el script usa MoonVeil o Luraph, está compilado en un <em>Bytecode personalizado</em>. La IA te dará un <strong>Análisis Forense</strong> (constantes, estructura), pero para recuperar el código 100% funcional necesitas usar un <strong>Dumper</strong> o un desofuscador nativo (como los de abajo).
+    </div>
 
-    <!-- 1. Área para arrastrar o seleccionar el archivo .txt -->
     <div class="card">
         <label for="fileInput" class="drop-zone" id="dropZone">
             <span style="font-size: 24px;">📁</span><br>
-            <strong>Haz clic o arrastra tu archivo .txt aquí</strong><br>
-            <small style="color: #8b949e;">Soporta archivos .txt, .lua, .luau</small>
+            <strong>Haz clic o arrastra tu archivo .txt / .lua aquí</strong>
         </label>
         <input type="file" id="fileInput" accept=".txt,.lua,.luau,text/plain">
-        
         <div id="fileNameDisplay" style="margin-top: 10px; text-align: center; color: #58a6ff; font-weight: bold;"></div>
-
-        <!-- 2. Botón "Desencriptar / Desofuscar" -->
-        <button class="btn" id="actionBtn" disabled onclick="procesarArchivo()">🔍 Desencriptar / Desofuscar</button>
+        <button class="btn" id="actionBtn" disabled onclick="procesarArchivo()">🔍 Analizar con IA</button>
         <div id="statusMsg" class="status-msg"></div>
     </div>
 
-    <!-- 3. Zona para mostrar el resultado -->
     <div class="card">
-        <h2 style="font-size: 1.2em; margin-top: 0; color: #58a6ff;">Resultado:</h2>
-        <div id="resultOutput" class="result-zone">El texto desencriptado o el script original aparecerá aquí...</div>
+        <h2 style="font-size: 1.2em; margin-top: 0; color: #58a6ff;">Resultado del Análisis:</h2>
+        <div id="resultOutput" class="result-zone">El análisis detallado aparecerá aquí...</div>
     </div>
 
-    <!-- 4. Sección informativa con referencias -->
     <div class="card info-section">
-        <h2 style="font-size: 1.2em; margin-top: 0; color: #58a6ff;">Herramientas y Modelos Relacionados</h2>
+        <h2 style="font-size: 1.2em; margin-top: 0; color: #58a6ff;">Herramientas para recuperar el código final</h2>
         <ul>
-            <li><strong>deobfuscate.su:</strong> Herramienta especializada en decodificar la estructura de <strong>MoonVeil</strong>. <a href="https://www.deobfuscate.su/" target="_blank">Visitar sitio</a></li>
-            <li><strong>Deepseek-cybersec-33b-instruct:</strong> Modelo fine-tuned basado en DeepSeek-Coder para análisis de malware y desofuscación (proyecto de Hackathon en Hugging Face). <a href="https://huggingface.co/TeanShow/Deepseek-cybersec-33b-instruct" target="_blank">Ver modelo</a></li>
-            <li><strong>Otras herramientas:</strong> Existen herramientas como <em>Lua Deobfuscator Pro</em> o <em>LuaDeobfus Genius</em> con IA entrenada para ofuscadores como MoonVeil v1.4.5.</li>
+            <li><strong>deobfuscate.su:</strong> Desofuscador online especializado en <strong>MoonVeil</strong> y otras VMs. Devuelve el bytecode a código Lua. <a href="https://www.deobfuscate.su/" target="_blank">Visitar sitio</a></li>
+            <li><strong>LuauDumper / Medal:</strong> Si el script es para Roblox, estas herramientas se inyectan en el juego para interceptar la memoria y volcar el script original. (Buscar en GitHub).</li>
+            <li><strong>Deepseek-cybersec-33b-instruct:</strong> Modelo de IA fine-tuneado para ciberseguridad. <a href="https://huggingface.co/TeanShow/Deepseek-cybersec-33b-instruct" target="_blank">Ver modelo</a></li>
         </ul>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURACIÓN DE LA IA (Apunta a tu backend en Vercel) ---
     const API_URL = 'https://deobfuscator-api-alpha.vercel.app/api/desofuscar';
-
     const fileInput = document.getElementById('fileInput');
     const dropZone = document.getElementById('dropZone');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
     const actionBtn = document.getElementById('actionBtn');
     const resultOutput = document.getElementById('resultOutput');
     const statusMsg = document.getElementById('statusMsg');
-
     let contenidoArchivo = "";
 
-    // Eventos para Drag & Drop
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.style.backgroundColor = '#1f6feb44';
-    });
-    dropZone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropZone.style.backgroundColor = 'transparent';
-    });
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.backgroundColor = '#1f6feb44'; });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.backgroundColor = 'transparent'; });
     dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.style.backgroundColor = 'transparent';
-        const file = e.dataTransfer.files[0];
-        if (file) manejarArchivo(file);
+        e.preventDefault(); dropZone.style.backgroundColor = 'transparent';
+        if (e.dataTransfer.files[0]) manejarArchivo(e.dataTransfer.files[0]);
     });
+    fileInput.addEventListener('change', (e) => { if (e.target.files[0]) manejarArchivo(e.target.files[0]); });
 
-    // Evento para selección manual
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) manejarArchivo(file);
-    });
-
-    // Leer el archivo
     function manejarArchivo(file) {
-        if (!file.name.endsWith('.txt') && !file.name.endsWith('.lua') && !file.name.endsWith('.luau')) {
-            alert("Por favor, selecciona un archivo de texto válido (.txt, .lua, .luau)");
-            return;
-        }
-
         fileNameDisplay.textContent = "Archivo cargado: " + file.name;
         const reader = new FileReader();
-        
         reader.onload = (e) => {
             contenidoArchivo = e.target.result;
-            actionBtn.disabled = false; // Habilitar el botón
+            actionBtn.disabled = false;
             statusMsg.textContent = "";
-            resultOutput.textContent = "Archivo listo. Presiona el botón para procesar.";
+            resultOutput.textContent = "Archivo listo. Presiona el botón para que la IA lo analice.";
         };
-        
         reader.readAsText(file);
     }
 
-    // Función del Botón (Enviar a la IA)
     async function procesarArchivo() {
         if (!contenidoArchivo) return;
-
         actionBtn.disabled = true;
-        actionBtn.textContent = "⏳ Procesando con IA...";
-        statusMsg.textContent = "Conectando con el servidor...";
+        actionBtn.textContent = "⏳ Analizando estructura...";
+        statusMsg.textContent = "Conectando con el servidor de IA...";
         statusMsg.style.color = "#d29922";
         resultOutput.textContent = "";
 
@@ -179,27 +100,24 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ textoOfuscado: contenidoArchivo })
             });
-
             const datos = await respuesta.json();
 
             if (respuesta.ok && datos.resultado) {
                 resultOutput.textContent = datos.resultado;
-                statusMsg.textContent = "✅ Procesado con éxito.";
+                statusMsg.textContent = "✅ Análisis completado.";
                 statusMsg.style.color = "#3fb950";
             } else {
-                throw new Error(datos.error || "Error desconocido del servidor");
+                throw new Error(datos.error || "Error del servidor");
             }
         } catch (error) {
-            // SI LA IA FALLA, TE MUESTRA EL TEXTO ORIGINAL (Como pediste)
-            resultOutput.textContent = contenidoArchivo;
-            statusMsg.textContent = "⚠️ La IA falló. Se ha mostrado el script original. (Error: " + error.message + ")";
+            resultOutput.textContent = "No se pudo conectar con la IA. Revisa los logs de Vercel.";
+            statusMsg.textContent = "❌ Error: " + error.message;
             statusMsg.style.color = "#f85149";
         } finally {
             actionBtn.disabled = false;
-            actionBtn.textContent = "🔍 Desencriptar / Desofuscar";
+            actionBtn.textContent = "🔍 Analizar con IA";
         }
     }
 </script>
-
 </body>
 </html>
